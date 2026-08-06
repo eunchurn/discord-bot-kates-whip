@@ -1,0 +1,64 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "bun"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Guild {
+  id               String  @id @map("guild_id")
+  timezone         String  @default("UTC")
+  defaultChannelId String? @map("default_channel_id")
+  adminRoleId      String? @map("admin_role_id")
+  locale           String  @default("ko")
+
+  events Event[]
+
+  @@map("guilds")
+}
+
+model Event {
+  id      String @id
+  guildId String @map("guild_id")
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  name      String
+  presetKey String  @map("preset_key")
+  emoji     String
+  note      String?
+  channelId String  @map("channel_id")
+
+  /// JSON array of role ids; the literal "everyone" means @everyone.
+  mentions String
+  /// JSON array of minutes before the start time.
+  leadMinutes     String  @map("lead_minutes")
+  announceAtStart Boolean @map("announce_at_start")
+  /// JSON-encoded EventSchedule.
+  schedule String
+  enabled  Boolean @default(true)
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @map("created_at")
+
+  fired FiredReminder[]
+
+  @@index([guildId])
+  @@map("events")
+}
+
+/// One row per reminder already sent, so a restart never double-pings.
+model FiredReminder {
+  eventId String @map("event_id")
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  key     String
+  firedAt DateTime @map("fired_at")
+
+  @@id([eventId, key])
+  @@index([firedAt])
+  @@map("fired_reminders")
+}

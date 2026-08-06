@@ -1,0 +1,19 @@
+services:
+  kates-whip:
+    build: .
+    container_name: kates-whip-bot
+    restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DATABASE_URL=file:/data/kates-whip.db
+      - TICK_SECONDS=${TICK_SECONDS:-30}
+      - DEFAULT_TIMEZONE=${DEFAULT_TIMEZONE:-UTC}
+      - DEFAULT_LEAD_MINUTES=${DEFAULT_LEAD_MINUTES:-10,5}
+    volumes:
+      - ./data:/data
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge

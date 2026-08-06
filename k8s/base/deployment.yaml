@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kates-whip
+  labels:
+    app: kates-whip
+spec:
+  replicas: 1
+  # Two replicas would double-send every reminder, so never overlap pods.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: kates-whip
+  template:
+    metadata:
+      labels:
+        app: kates-whip
+    spec:
+      restartPolicy: Always
+      # Pin to nodes with outbound internet egress that also share the NFS
+      # site backing the openebs-rwx-fiserver PVC.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - danbi-fi-server-1
+                      - danbi-server-2
+      containers:
+        - name: kates-whip
+          image: ghcr.io/eunchurn/kates-whip:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DISCORD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: kates-whip-secret
+                  key: DISCORD_TOKEN
+            - name: DATABASE_URL
+              value: file:/data/kates-whip.db
+            - name: TICK_SECONDS
+              value: "30"
+            - name: DEFAULT_TIMEZONE
+              value: "UTC"
+            - name: DEFAULT_LEAD_MINUTES
+              value: "10,5"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: kates-whip-data
