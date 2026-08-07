@@ -59,6 +59,23 @@ describe("guild settings", () => {
     expect(getGuild("g1")?.timezone).toBe("UTC");
   });
 
+  test("a new guild is seeded with DEFAULT_ADMIN_ROLE_ID", async () => {
+    // "ZXC staff" — set in src/test-setup.ts.
+    expect((await ensureGuild("g1")).adminRoleId).toBe("1470006260173897738");
+
+    await reload();
+    expect(getGuild("g1")?.adminRoleId).toBe("1470006260173897738");
+  });
+
+  test("/setup can override the seeded admin role", async () => {
+    const guild = await ensureGuild("g1");
+    guild.adminRoleId = "role-custom";
+    await saveGuildSettings(guild);
+
+    await reload();
+    expect(getGuild("g1")?.adminRoleId).toBe("role-custom");
+  });
+
   test("settings survive a reload", async () => {
     const guild = await ensureGuild("g1");
     guild.defaultChannelId = "chan-42";

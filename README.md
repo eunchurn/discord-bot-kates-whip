@@ -78,8 +78,9 @@ different `anchor` one day apart — the two will never land on the same day.
 | `/giftcodes` | Active Kingshot gift codes from kingshot.net |
 | `/help` | Usage summary |
 
-Managing events requires the **Manage Server** permission or the role set as
-`admin_role` in `/setup`. Read-only commands are open to everyone.
+Managing events requires the **Manage Server** permission or the admin role —
+**ZXC staff** by default, changeable with `/setup admin_role:`. Read-only
+commands are open to everyone.
 
 ## Configuration
 
@@ -89,7 +90,12 @@ Managing events requires the **Manage Server** permission or the role set as
 | `DATABASE_URL` | `file:./data/kates-whip.db` | SQLite database |
 | `TICK_SECONDS` | `30` | How often reminders are evaluated |
 | `DEFAULT_TIMEZONE` | `UTC` | Timezone for new servers and events |
+| `DEFAULT_ADMIN_ROLE_ID` | — | Role seeded as the event-managing role on join |
 | `DEFAULT_LEAD_MINUTES` | `10,5` | Default reminder lead times |
+
+`DEFAULT_ADMIN_ROLE_ID` is set to `1470006260173897738` (**ZXC staff**) in the
+compose file and the Kubernetes manifest, so the bot is manageable the moment it
+joins. `/setup admin_role:` overrides it per server.
 
 ## Data model
 

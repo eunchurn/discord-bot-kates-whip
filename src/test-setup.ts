@@ -9,6 +9,7 @@ const file = join(dir, "test.db");
 
 process.env.DATABASE_URL = `file:${file}`;
 process.env.DISCORD_TOKEN ??= "test-token";
+process.env.DEFAULT_ADMIN_ROLE_ID = "1470006260173897738";
 
 // Apply the committed migrations so tests run against the real schema.
 const result = Bun.spawnSync(["bunx", "prisma", "migrate", "deploy"], {

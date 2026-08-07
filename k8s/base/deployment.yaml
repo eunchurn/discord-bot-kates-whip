@@ -46,6 +46,9 @@ spec:
               value: "30"
             - name: DEFAULT_TIMEZONE
               value: "UTC"
+            # "ZXC staff" — seeded as the event-managing role for new servers.
+            - name: DEFAULT_ADMIN_ROLE_ID
+              value: "1470006260173897738"
             - name: DEFAULT_LEAD_MINUTES
               value: "10,5"
           resources:

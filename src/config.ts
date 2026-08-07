@@ -27,6 +27,12 @@ export const TICK_SECONDS = num("TICK_SECONDS", 30);
  */
 export const DEFAULT_TIMEZONE = process.env.DEFAULT_TIMEZONE ?? "UTC";
 
+/**
+ * Role seeded as the event-managing role when the bot joins a new server.
+ * `/setup admin_role:` overrides it per server.
+ */
+export const DEFAULT_ADMIN_ROLE_ID = process.env.DEFAULT_ADMIN_ROLE_ID?.trim() || undefined;
+
 export const DEFAULT_LEAD_MINUTES: number[] = (
   process.env.DEFAULT_LEAD_MINUTES ?? "10,5"
 )

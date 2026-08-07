@@ -8,6 +8,7 @@ services:
       - DATABASE_URL=file:/data/kates-whip.db
       - TICK_SECONDS=${TICK_SECONDS:-30}
       - DEFAULT_TIMEZONE=${DEFAULT_TIMEZONE:-UTC}
+      - DEFAULT_ADMIN_ROLE_ID=${DEFAULT_ADMIN_ROLE_ID:-1470006260173897738}
       - DEFAULT_LEAD_MINUTES=${DEFAULT_LEAD_MINUTES:-10,5}
     volumes:
       - ./data:/data

@@ -1,4 +1,4 @@
-import { DEFAULT_TIMEZONE } from "./config.ts";
+import { DEFAULT_ADMIN_ROLE_ID, DEFAULT_TIMEZONE } from "./config.ts";
 import { prisma } from "./db.ts";
 import type { EventModel, GuildModel } from "./generated/prisma/models.ts";
 import type { EventConfig, EventSchedule, GuildConfig } from "./types.ts";
@@ -110,6 +110,7 @@ export async function ensureGuild(guildId: string): Promise<GuildConfig> {
   const created: GuildConfig = {
     guildId,
     timezone: DEFAULT_TIMEZONE,
+    adminRoleId: DEFAULT_ADMIN_ROLE_ID,
     locale: "ko",
     events: [],
   };
@@ -117,7 +118,12 @@ export async function ensureGuild(guildId: string): Promise<GuildConfig> {
 
   await prisma.guild.upsert({
     where: { id: guildId },
-    create: { id: guildId, timezone: created.timezone, locale: created.locale },
+    create: {
+      id: guildId,
+      timezone: created.timezone,
+      adminRoleId: created.adminRoleId ?? null,
+      locale: created.locale,
+    },
     update: {},
   });
 
