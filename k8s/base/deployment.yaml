@@ -19,6 +19,15 @@ spec:
         app: kates-whip
     spec:
       restartPolicy: Always
+      # The image runs as the unprivileged `bun` user (uid/gid 1000), but a
+      # freshly provisioned volume is owned by root and shadows the image's
+      # /data. fsGroup makes the kubelet hand the mount to gid 1000, otherwise
+      # `prisma migrate deploy` fails with "unable to open database file".
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       # The exp-worker pool (Rocky Linux) has no outbound egress on :443, so
       # the bot cannot reach Discord there. These two nodes have egress and are
       # the only ones the openebs-lvm-fiserver storage class provisions on.

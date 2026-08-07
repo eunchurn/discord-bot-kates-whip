@@ -24,6 +24,8 @@ const COPY = {
   ko: {
     startsAt: "시작 시각",
     relative: "남은 시간",
+    status: "상태",
+    started: "🔔 시작됨",
     footer: "Kate's Whip • 연맹 이벤트 알림",
     rally: "연맹원 전원 집합!",
     serverTime: "서버 시간",
@@ -31,6 +33,8 @@ const COPY = {
   en: {
     startsAt: "Starts at",
     relative: "Countdown",
+    status: "Status",
+    started: "🔔 Started",
     footer: "Kate's Whip • alliance event reminder",
     rally: "All hands on deck!",
     serverTime: "Server time",
@@ -69,7 +73,12 @@ export function buildReminder(
           .toFormat("yyyy-MM-dd HH:mm")}\` (${zoneLabel(event.schedule.timezone, locale)})`,
         inline: false,
       },
-      { name: copy.relative, value: discordTimestamp(occurrence, "R"), inline: true },
+      // Discord renders `<t:R>` live, so a countdown flips to "5 minutes ago"
+      // once the start passes. At T-0 there is nothing to count down to, so
+      // state that it has started instead of mislabelling elapsed time.
+      leadMinutes === 0
+        ? { name: copy.status, value: `**${copy.started}**`, inline: true }
+        : { name: copy.relative, value: discordTimestamp(occurrence, "R"), inline: true },
     )
     .setFooter({ text: copy.footer });
 

@@ -34,13 +34,13 @@ permissions (the last one only if you want `@everyone` pings).
 
 Configure the server once:
 
-```
+```sh
 /setup channel:#alliance admin_role:@R4
 ```
 
 Then add events. `time` is UTC unless you pass `timezone`:
 
-```
+```sh
 /event add preset:Bear Hunt 1  time:20:00  days:every2  mention:@Alliance
 /event add preset:Bear Hunt 2  time:12:00  days:every2  anchor:2026-08-08
 /event add preset:Swordland Showdown  time:13:00  days:sun  remind:60,10,5
@@ -49,34 +49,34 @@ Then add events. `time` is UTC unless you pass `timezone`:
 
 ### Schedule options
 
-| Option | Meaning | Examples |
-|---|---|---|
-| `time` | Start time, 24h, UTC by default | `20:00`, `8pm`, `0930` |
-| `days` | Recurrence | `mon,thu` · `daily` · `every2` |
-| `anchor` | For `everyN`, a date the cycle lands on | `2026-08-08` |
-| `remind` | Minutes before start | `10,5` (default), `60,15,5` |
-| `timezone` | Override UTC | `Asia/Seoul` |
-| `mention` | Role to ping | `@Alliance` |
-| `announce_at_start` | Also ping at kickoff | default `true` |
+| Option              | Meaning                                 | Examples                       |
+| ------------------- | --------------------------------------- | ------------------------------ |
+| `time`              | Start time, 24h, UTC by default         | `20:00`, `8pm`, `0930`         |
+| `days`              | Recurrence                              | `mon,thu` · `daily` · `every2` |
+| `anchor`            | For `everyN`, a date the cycle lands on | `2026-08-08`                   |
+| `remind`            | Minutes before start                    | `10,5` (default), `60,15,5`    |
+| `timezone`          | Override UTC                            | `Asia/Seoul`                   |
+| `mention`           | Role to ping                            | `@Alliance`                    |
+| `announce_at_start` | Also ping at kickoff                    | default `true`                 |
 
 Bear Hunt runs on a two-day cycle, so use `days:every2` and give each trap a
 different `anchor` one day apart — the two will never land on the same day.
 
 ### Commands
 
-| Command | What it does |
-|---|---|
-| `/event add` | Schedule a new event reminder |
-| `/event list` | Every event with its next start time |
-| `/event next` | What's coming up, in order |
-| `/event edit` | Change time, days, channel, mentions… |
-| `/event toggle` | Pause or resume an event |
-| `/event remove` | Delete an event |
-| `/event test` | Preview a reminder — nobody gets pinged |
-| `/event presets` | The alliance event catalog |
-| `/setup` | Default channel, admin role, timezone, language |
-| `/giftcodes` | Active Kingshot gift codes from kingshot.net |
-| `/help` | Usage summary |
+| Command          | What it does                                    |
+| ---------------- | ----------------------------------------------- |
+| `/event add`     | Schedule a new event reminder                   |
+| `/event list`    | Every event with its next start time            |
+| `/event next`    | What's coming up, in order                      |
+| `/event edit`    | Change time, days, channel, mentions…           |
+| `/event toggle`  | Pause or resume an event                        |
+| `/event remove`  | Delete an event                                 |
+| `/event test`    | Preview a reminder — nobody gets pinged         |
+| `/event presets` | The alliance event catalog                      |
+| `/setup`         | Default channel, admin role, timezone, language |
+| `/giftcodes`     | Active Kingshot gift codes from kingshot.net    |
+| `/help`          | Usage summary                                   |
 
 Managing events requires the **Manage Server** permission or the admin role —
 **ZXC staff** by default, changeable with `/setup admin_role:`. Read-only
@@ -84,14 +84,14 @@ commands are open to everyone.
 
 ## Configuration
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `DISCORD_TOKEN` | — | Bot token (required) |
-| `DATABASE_URL` | `file:./data/kates-whip.db` | SQLite database |
-| `TICK_SECONDS` | `30` | How often reminders are evaluated |
-| `DEFAULT_TIMEZONE` | `UTC` | Timezone for new servers and events |
-| `DEFAULT_ADMIN_ROLE_ID` | — | Role seeded as the event-managing role on join |
-| `DEFAULT_LEAD_MINUTES` | `10,5` | Default reminder lead times |
+| Variable                | Default                     | Purpose                                        |
+| ----------------------- | --------------------------- | ---------------------------------------------- |
+| `DISCORD_TOKEN`         | —                           | Bot token (required)                           |
+| `DATABASE_URL`          | `file:./data/kates-whip.db` | SQLite database                                |
+| `TICK_SECONDS`          | `30`                        | How often reminders are evaluated              |
+| `DEFAULT_TIMEZONE`      | `UTC`                       | Timezone for new servers and events            |
+| `DEFAULT_ADMIN_ROLE_ID` | —                           | Role seeded as the event-managing role on join |
+| `DEFAULT_LEAD_MINUTES`  | `10,5`                      | Default reminder lead times                    |
 
 `DEFAULT_ADMIN_ROLE_ID` is set to `1470006260173897738` (**ZXC staff**) in the
 compose file and the Kubernetes manifest, so the bot is manageable the moment it
