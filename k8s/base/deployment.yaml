@@ -6,7 +6,8 @@ metadata:
     app: kates-whip
 spec:
   replicas: 1
-  # Two replicas would double-send every reminder, so never overlap pods.
+  # Two pods would double-send every reminder and give SQLite two writers,
+  # so never let a new pod overlap the old one.
   strategy:
     type: Recreate
   selector:
@@ -18,8 +19,9 @@ spec:
         app: kates-whip
     spec:
       restartPolicy: Always
-      # Pin to nodes with outbound internet egress that also share the NFS
-      # site backing the openebs-rwx-fiserver PVC.
+      # The exp-worker pool (Rocky Linux) has no outbound egress on :443, so
+      # the bot cannot reach Discord there. These two nodes have egress and are
+      # the only ones the openebs-lvm-fiserver storage class provisions on.
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -32,7 +34,7 @@ spec:
                       - danbi-server-2
       containers:
         - name: kates-whip
-          image: ghcr.io/eunchurn/kates-whip:latest
+          image: ghcr.io/eunchurn/discord-bot-kates-whip:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: DISCORD_TOKEN

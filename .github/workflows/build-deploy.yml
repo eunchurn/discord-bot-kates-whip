@@ -21,8 +21,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: eunchurn/kates-whip
-  NAMESPACE: kates-whip
+  IMAGE_NAME: eunchurn/discord-bot-kates-whip
+  NAMESPACE: ks-bot
   DEPLOYMENT: kates-whip
   CONTAINER: kates-whip
 
@@ -90,6 +90,11 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          # Links the GHCR package back to this repository, so package
+          # permissions follow the repo instead of becoming orphaned.
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

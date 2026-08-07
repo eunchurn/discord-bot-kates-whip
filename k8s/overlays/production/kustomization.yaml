@@ -1,12 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: kates-whip
+namespace: ks-bot
 
 resources:
   - ../../base
 
 images:
-  - name: ghcr.io/eunchurn/kates-whip
-    newName: ghcr.io/eunchurn/kates-whip
+  - name: ghcr.io/eunchurn/discord-bot-kates-whip
+    newName: ghcr.io/eunchurn/discord-bot-kates-whip
     newTag: latest

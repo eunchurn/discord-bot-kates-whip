@@ -3,9 +3,14 @@ kind: PersistentVolumeClaim
 metadata:
   name: kates-whip-data
 spec:
+  # ReadWriteOnce on local LVM, not NFS: SQLite relies on POSIX advisory locks,
+  # which are unreliable over NFS and can corrupt the database. Only one pod
+  # ever writes, so RWO costs nothing.
   accessModes:
-    - ReadWriteMany
-  storageClassName: openebs-rwx-fiserver
+    - ReadWriteOnce
+  # Topology-restricted to danbi-fi-server-1 / danbi-server-2 — the same two
+  # nodes the deployment pins to.
+  storageClassName: openebs-lvm-fiserver
   resources:
     requests:
       storage: 1Gi
