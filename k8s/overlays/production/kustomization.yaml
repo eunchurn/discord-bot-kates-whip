@@ -4,9 +4,9 @@ kind: Kustomization
 namespace: ks-bot
 
 resources:
-  - ../../base
+- ../../base
 
 images:
-  - name: ghcr.io/eunchurn/discord-bot-kates-whip
-    newName: ghcr.io/eunchurn/discord-bot-kates-whip
-    newTag: latest
+- name: ghcr.io/eunchurn/discord-bot-kates-whip
+  newName: ghcr.io/eunchurn/discord-bot-kates-whip
+  newTag: sha-573ec0f
