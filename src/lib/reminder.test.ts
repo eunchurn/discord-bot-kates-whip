@@ -31,33 +31,26 @@ function fields(lead: number, locale: "ko" | "en" = "ko") {
   return embed.toJSON().fields ?? [];
 }
 
-describe("countdown vs started", () => {
-  test("a lead-time reminder counts down with a live timestamp", () => {
-    const relative = fields(10).find((field) => field.name === "남은 시간");
-    expect(relative?.value).toBe(`<t:${OCCURRENCE.toSeconds()}:R>`);
-  });
-
-  test("the start announcement says it started instead of counting down", () => {
-    const names = fields(0).map((field) => field.name);
-    expect(names).toContain("상태");
-    expect(names).not.toContain("남은 시간");
-
-    const status = fields(0).find((field) => field.name === "상태");
-    expect(status?.value).toContain("시작됨");
-  });
-
-  test("no field carries a bare relative timestamp at T-0", () => {
-    // A `<t:…:R>` here would render as "5 minutes ago" once the start passes.
-    for (const field of fields(0)) {
-      expect(field.value).not.toMatch(/<t:\d+:R>/);
+describe("no text that decays once the start passes", () => {
+  test("no reminder carries a relative timestamp", () => {
+    // Discord re-renders `<t:…:R>` live, so it would turn into "5 minutes ago"
+    // under a "time remaining" label. The headline carries the countdown
+    // instead, and it is frozen at send time.
+    for (const lead of [0, 5, 10, 60, 1440]) {
+      for (const locale of ["ko", "en"] as const) {
+        const { embed } = buildReminder(bearHunt(), OCCURRENCE, lead, locale);
+        expect(JSON.stringify(embed.toJSON())).not.toMatch(/<t:\d+:R>/);
+      }
     }
   });
 
-  test("English keeps the same behaviour", () => {
-    expect(fields(10, "en").map((f) => f.name)).toContain("Countdown");
-    const names = fields(0, "en").map((field) => field.name);
-    expect(names).toContain("Status");
-    expect(names).not.toContain("Countdown");
+  test("the only scheduling field is the absolute start time", () => {
+    for (const lead of [0, 10]) {
+      const names = fields(lead).map((field) => field.name);
+      expect(names).not.toContain("남은 시간");
+      expect(names).not.toContain("상태");
+      expect(names[0]).toBe("시작 시각");
+    }
   });
 });
 
@@ -71,11 +64,16 @@ describe("headline", () => {
       .toContain("Starts in 2h");
   });
 
-  test("T-0 announces the start", () => {
+  test("T-0 states the event has started, in the past tense", () => {
     expect(buildReminder(bearHunt(), OCCURRENCE, 0, "ko").embed.toJSON().description)
-      .toContain("지금 시작합니다!");
+      .toContain("이벤트 시작됨.");
     expect(buildReminder(bearHunt(), OCCURRENCE, 0, "en").embed.toJSON().description)
-      .toContain("Starting now!");
+      .toContain("Event started.");
+  });
+
+  test("the ping line repeats the headline", () => {
+    const { content } = buildReminder(bearHunt({ mentions: ["7"] }), OCCURRENCE, 0, "ko");
+    expect(content).toBe("<@&7> 🐻 **Bear Hunt 1** — 이벤트 시작됨.");
   });
 });
 
