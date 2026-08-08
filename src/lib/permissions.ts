@@ -20,6 +20,30 @@ function roleIds(member: GuildMember | APIInteractionGuildMember | null): string
 }
 
 /**
+ * Returns an error when the bot is not actually a member of this server.
+ *
+ * A user-installed app receives interactions from servers it has not joined:
+ * the slash commands show up and configuration appears to work, but the bot
+ * can never post, so every reminder dies with "Missing Access". With the
+ * Guilds intent every joined guild is cached, so an absent `interaction.guild`
+ * means the bot is not in it.
+ */
+export function checkBotIsMember(interaction: ChatInputCommandInteraction): string {
+  if (!interaction.inGuild() || interaction.guild) return "";
+
+  return [
+    "⚠️ **This bot is not a member of this server**, so it cannot post reminders here.",
+    "",
+    "It looks like the app was added to your account (“Add App”) instead of invited to the server.",
+    "Ask someone with **Manage Server** to open this link and choose **Add to Server**:",
+    "",
+    "https://discord.com/oauth2/authorize?client_id=1535266769227489411&scope=bot+applications.commands&permissions=150528",
+    "",
+    "You will know it worked when **Kate's Whip** appears in the server's member list.",
+  ].join("\n");
+}
+
+/**
  * Returns an error string when the caller may not manage events, or "" when
  * they may. Managing requires either the configured admin role or the
  * Manage Server permission — so a fresh install is never locked out.

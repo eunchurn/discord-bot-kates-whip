@@ -5,7 +5,7 @@ import {
   type ChatInputCommandInteraction,
 } from "discord.js";
 
-import { checkManagePermission } from "../lib/permissions.ts";
+import { checkBotIsMember, checkManagePermission } from "../lib/permissions.ts";
 import { isValidTimezone, listTimezones } from "../lib/time.ts";
 import { ensureGuild, saveGuildSettings } from "../store.ts";
 import type { Command } from "./types.ts";
@@ -16,6 +16,12 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
       content: "This command only works inside a server.",
       flags: MessageFlags.Ephemeral,
     });
+    return;
+  }
+
+  const notAMember = checkBotIsMember(interaction);
+  if (notAMember) {
+    await interaction.reply({ content: notAMember, flags: MessageFlags.Ephemeral });
     return;
   }
 

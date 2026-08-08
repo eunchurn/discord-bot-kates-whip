@@ -11,7 +11,7 @@ import { DEFAULT_LEAD_MINUTES, WIKI_EVENTS_URL } from "../config.ts";
 import { PRESET_CHOICES, PRESETS, findPreset } from "../events/presets.ts";
 import { describeSchedule, nextOccurrence, nextOccurrences } from "../events/schedule.ts";
 import { reminderOffsets } from "../events/scheduler.ts";
-import { checkManagePermission } from "../lib/permissions.ts";
+import { checkBotIsMember, checkManagePermission } from "../lib/permissions.ts";
 import { buildReminder } from "../lib/reminder.ts";
 import {
   discordTimestamp,
@@ -457,6 +457,14 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
   const sub = interaction.options.getSubcommand();
 
   if (MUTATING.has(sub)) {
+    // Fail loudly here rather than letting someone configure events that can
+    // never be delivered.
+    const notAMember = checkBotIsMember(interaction);
+    if (notAMember) {
+      await interaction.reply({ content: notAMember, flags: MessageFlags.Ephemeral });
+      return;
+    }
+
     const denied = checkManagePermission(interaction, guild);
     if (denied) {
       await interaction.reply({ content: `❌ ${denied}`, flags: MessageFlags.Ephemeral });
