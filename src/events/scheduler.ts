@@ -5,6 +5,7 @@ import { TICK_SECONDS } from "../config.ts";
 import { buildReminder } from "../lib/reminder.ts";
 import { allGuilds, clearFired, pruneFired, recordFired } from "../store.ts";
 import type { EventConfig, GuildConfig } from "../types.ts";
+import { classifySendError, type SendOutcome } from "./dispatch-errors.ts";
 import { nextOccurrences } from "./schedule.ts";
 
 /**
@@ -70,18 +71,19 @@ async function dispatch(
   event: EventConfig,
   occurrence: DateTime,
   lead: number,
-): Promise<boolean> {
+): Promise<SendOutcome> {
   const channelId = event.channelId || guild.defaultChannelId;
   if (!channelId) {
-    console.warn(`⚠️  ${event.name}: no channel configured, skipping reminder`);
-    return false;
+    return { kind: "giveUp", message: "no channel configured — run /setup or /event edit" };
   }
 
   try {
     const channel = await client.channels.fetch(channelId);
     if (!channel?.isSendable()) {
-      console.warn(`⚠️  ${event.name}: channel ${channelId} is not a usable text channel`);
-      return false;
+      return {
+        kind: "giveUp",
+        message: `channel ${channelId} is not a text channel this bot can post in`,
+      };
     }
 
     const { content, embed } = buildReminder(event, occurrence, lead, guild.locale);
@@ -90,13 +92,10 @@ async function dispatch(
       embeds: [embed],
       allowedMentions: { parse: ["everyone", "roles"] },
     });
-    console.log(
-      `🔔 ${guild.guildId} • ${event.name} • T-${lead}m • ${occurrence.toISO()}`,
-    );
-    return true;
+    console.log(`🔔 ${guild.guildId} • ${event.name} • T-${lead}m • ${occurrence.toISO()}`);
+    return { kind: "sent" };
   } catch (error) {
-    console.error(`❌ Failed to send reminder for ${event.name}:`, error);
-    return false;
+    return classifySendError(error, channelId);
   }
 }
 
@@ -115,8 +114,17 @@ async function runTick(client: Client): Promise<void> {
         // next tick, and so a crash mid-send does not replay on restart.
         await recordFired(event, due.key, firedAt);
 
-        const sent = await dispatch(client, guild, event, due.occurrence, due.lead);
-        if (!sent) await clearFired(event, due.key);
+        const outcome = await dispatch(client, guild, event, due.occurrence, due.lead);
+
+        if (outcome.kind === "retry") {
+          // Release the claim so the next tick can try again.
+          await clearFired(event, due.key);
+          console.warn(`⚠️  ${event.name} (T-${due.lead}m): ${outcome.message} — will retry`);
+        } else if (outcome.kind === "giveUp") {
+          // Keep the claim: retrying cannot help until someone fixes the
+          // setup, and re-firing every tick would only repeat this line.
+          console.error(`❌ ${event.name} (T-${due.lead}m): ${outcome.message} — reminder dropped`);
+        }
       }
     }
   }
