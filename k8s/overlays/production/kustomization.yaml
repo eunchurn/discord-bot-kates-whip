@@ -9,4 +9,4 @@ resources:
 images:
 - name: ghcr.io/eunchurn/discord-bot-kates-whip
   newName: ghcr.io/eunchurn/discord-bot-kates-whip
-  newTag: sha-acf5079
+  newTag: sha-4412316
