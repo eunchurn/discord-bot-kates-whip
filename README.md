@@ -49,18 +49,36 @@ Then add events. `time` is UTC unless you pass `timezone`:
 
 ### Schedule options
 
-| Option              | Meaning                                 | Examples                       |
-| ------------------- | --------------------------------------- | ------------------------------ |
-| `time`              | Start time, 24h, UTC by default         | `20:00`, `8pm`, `0930`         |
-| `days`              | Recurrence                              | `mon,thu` · `daily` · `every2` |
-| `anchor`            | For `everyN`, a date the cycle lands on | `2026-08-08`                   |
-| `remind`            | Minutes before start                    | `10,5` (default), `60,15,5`    |
-| `timezone`          | Override UTC                            | `Asia/Seoul`                   |
-| `mention`           | Role to ping                            | `@Alliance`                    |
-| `announce_at_start` | Also ping at kickoff                    | default `true`                 |
+| Option              | Meaning                                       | Examples                    |
+| ------------------- | --------------------------------------------- | --------------------------- |
+| `time`              | Start time, 24h, UTC by default                | `20:00`, `8pm`, `0930`      |
+| `days`              | Recurrence — see below                         | `mon,thu`, `every2w:sun`    |
+| `anchor`            | For `everyN`/`everyNw`, a date the cycle hits  | `2026-08-08`                |
+| `remind`            | Minutes before start                           | `10,5` (default), `60,15,5` |
+| `timezone`          | Override UTC                                   | `Asia/Seoul`                |
+| `mention`           | Role to ping                                   | `@Alliance`                 |
+| `announce_at_start` | Also ping at kickoff                           | default `true`              |
+
+### Recurrence (`days`)
+
+| Value              | Fires                                        |
+| ------------------ | -------------------------------------------- |
+| `mon,thu`          | Every Monday and Thursday                    |
+| `daily`            | Every day                                    |
+| `every2`, `2d`     | Every 2 days                                 |
+| `every2w`          | Every 2 weeks, on the anchor's weekday        |
+| `every2w:sun`      | Every 2 weeks on Sunday                      |
+| `monthly`          | Monthly, on the anchor's day of the month    |
+| `monthly:15`       | The 15th of every month                      |
+| `monthly:2nd-sat`  | The 2nd Saturday of every month              |
+| `monthly:last-sun` | The last Sunday of every month               |
 
 Bear Hunt runs on a two-day cycle, so use `days:every2` and give each trap a
 different `anchor` one day apart — the two will never land on the same day.
+
+Swordland Showdown is fortnightly (`every2w:sun`) and Tri-Alliance Clash is
+monthly. A day-of-month past the end of a short month falls back to its last
+day, so `monthly:31` still fires in February.
 
 ### Commands
 

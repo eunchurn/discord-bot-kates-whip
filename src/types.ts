@@ -1,5 +1,11 @@
 /** How an event repeats. */
-export type ScheduleKind = "weekly" | "daily" | "interval" | "once";
+export type ScheduleKind =
+  | "weekly"
+  | "daily"
+  | "interval"
+  | "once"
+  | "monthlyDay"
+  | "monthlyWeekday";
 
 export interface EventSchedule {
   kind: ScheduleKind;
@@ -9,10 +15,19 @@ export interface EventSchedule {
   timezone: string;
   /** Luxon weekday numbers, 1 = Monday … 7 = Sunday. Only for "weekly". */
   weekdays?: number[];
-  /** Repeat every N days. Only for "interval". */
+  /** Repeat every N days. Only for "interval" — a fortnight is 14. */
   intervalDays?: number;
   /** "YYYY-MM-DD" — the cycle start for "interval", the date for "once". */
   anchorDate?: string;
+  /**
+   * "monthlyDay": day of the month, 1–31. Months too short for it fall back to
+   * their last day, so 31 still fires in February.
+   */
+  dayOfMonth?: number;
+  /** "monthlyWeekday": 1st–5th occurrence in the month, or -1 for the last. */
+  nthWeek?: number;
+  /** "monthlyWeekday": 1 = Monday … 7 = Sunday. */
+  weekday?: number;
 }
 
 export interface EventConfig {

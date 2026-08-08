@@ -62,17 +62,44 @@ function buildSchedule(
   const days = parseDays(daysInput);
   if ("error" in days) fail(days.error);
 
+  const base = anchorInput
+    ? DateTime.fromISO(anchorInput, { zone: timezone })
+    : DateTime.now().setZone(timezone);
+  if (!base.isValid) fail(`\`${anchorInput}\` is not a valid date. Use \`YYYY-MM-DD\`.`);
+
   const schedule: EventSchedule = { kind: days.kind, time, timezone };
 
-  if (days.kind === "weekly") schedule.weekdays = days.weekdays;
+  switch (days.kind) {
+    case "weekly":
+      schedule.weekdays = days.weekdays;
+      break;
 
-  if (days.kind === "interval") {
-    schedule.intervalDays = days.intervalDays;
-    const anchor = anchorInput
-      ? DateTime.fromISO(anchorInput, { zone: timezone })
-      : DateTime.now().setZone(timezone);
-    if (!anchor.isValid) fail(`\`${anchorInput}\` is not a valid date. Use \`YYYY-MM-DD\`.`);
-    schedule.anchorDate = anchor.toFormat("yyyy-MM-dd");
+    case "interval": {
+      schedule.intervalDays = days.intervalDays;
+      // `every2w:sun` snaps the cycle onto the next Sunday, so the fortnight
+      // always lands on that weekday rather than on whatever today happens
+      // to be.
+      let anchor = base;
+      if (days.alignWeekday) {
+        const shift = (days.alignWeekday - base.weekday + 7) % 7;
+        anchor = base.plus({ days: shift });
+      }
+      schedule.anchorDate = anchor.toFormat("yyyy-MM-dd");
+      break;
+    }
+
+    case "monthlyDay":
+      // A bare `monthly` inherits the anchor's day of the month.
+      schedule.dayOfMonth = days.dayOfMonth ?? base.day;
+      break;
+
+    case "monthlyWeekday":
+      schedule.nthWeek = days.nthWeek;
+      schedule.weekday = days.weekday;
+      break;
+
+    case "daily":
+      break;
   }
 
   return schedule;
@@ -310,17 +337,35 @@ async function handleEdit(
   await interaction.reply({ embeds: [embed] });
 }
 
+const WEEKDAY_TOKENS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+const NTH_TOKENS: Record<number, string> = {
+  1: "1st",
+  2: "2nd",
+  3: "3rd",
+  4: "4th",
+  5: "5th",
+  [-1]: "last",
+};
+
 /** Reverse of parseDays, so `/event edit` can keep the untouched part. */
 function describeDaysOption(schedule: EventSchedule): string {
   switch (schedule.kind) {
     case "daily":
       return "daily";
-    case "interval":
-      return `every${schedule.intervalDays ?? 2}`;
-    case "weekly": {
-      const names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-      return (schedule.weekdays ?? []).map((weekday) => names[weekday - 1] ?? "mon").join(",");
+    case "interval": {
+      const days = schedule.intervalDays ?? 2;
+      return days % 7 === 0 ? `every${days / 7}w` : `every${days}`;
     }
+    case "weekly":
+      return (schedule.weekdays ?? [])
+        .map((weekday) => WEEKDAY_TOKENS[weekday - 1] ?? "mon")
+        .join(",");
+    case "monthlyDay":
+      return `monthly:${schedule.dayOfMonth ?? 1}`;
+    case "monthlyWeekday":
+      return `monthly:${NTH_TOKENS[schedule.nthWeek ?? 1] ?? "1st"}-${
+        WEEKDAY_TOKENS[(schedule.weekday ?? 1) - 1] ?? "mon"
+      }`;
     case "once":
       return "daily";
   }
@@ -462,9 +507,10 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 }
 
 const TIME_DESC = "Start time in server time (UTC), 24h — e.g. 20:00";
-const DAYS_DESC = "mon,thu  |  daily  |  every2 (every 2 days)";
+const DAYS_DESC =
+  "mon,thu · daily · every2 (2 days) · every2w:sun (fortnight) · monthly:2nd-sat";
 const REMIND_DESC = "Minutes before start, comma separated. Default 10,5";
-const ANCHOR_DESC = "For every-N-days: the date a cycle lands on (YYYY-MM-DD)";
+const ANCHOR_DESC = "For every-N-days/weeks: a date the cycle lands on (YYYY-MM-DD)";
 
 export const eventCommand: Command = {
   data: new SlashCommandBuilder()

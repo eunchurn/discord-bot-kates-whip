@@ -96,6 +96,133 @@ describe("daily and once", () => {
   });
 });
 
+describe("monthly by day of the month", () => {
+  const schedule: EventSchedule = {
+    kind: "monthlyDay",
+    time: "20:00",
+    timezone: SEOUL,
+    dayOfMonth: 15,
+  };
+
+  test("fires on that day every month", () => {
+    expect(nextOccurrences(schedule, NOW, 3).map(seoulLocal)).toEqual([
+      "2026-08-15 20:00",
+      "2026-09-15 20:00",
+      "2026-10-15 20:00",
+    ]);
+  });
+
+  test("a day past this month rolls to the next", () => {
+    const first: EventSchedule = { ...schedule, dayOfMonth: 1 };
+    expect(nextOccurrences(first, NOW, 2).map(seoulLocal)).toEqual([
+      "2026-09-01 20:00",
+      "2026-10-01 20:00",
+    ]);
+  });
+
+  test("the 31st falls back to the last day of short months", () => {
+    const last: EventSchedule = { ...schedule, dayOfMonth: 31 };
+    const found = nextOccurrences(last, NOW, 8).map(seoulLocal);
+    expect(found.slice(0, 3)).toEqual([
+      "2026-08-31 20:00",
+      "2026-09-30 20:00", // September has 30 days
+      "2026-10-31 20:00",
+    ]);
+    // 2027 is not a leap year, so February clamps to the 28th.
+    expect(found).toContain("2027-02-28 20:00");
+  });
+});
+
+describe("monthly by nth weekday (Tri-Alliance Clash)", () => {
+  test("the 2nd Saturday of each month", () => {
+    const schedule: EventSchedule = {
+      kind: "monthlyWeekday",
+      time: "13:00",
+      timezone: "UTC",
+      nthWeek: 2,
+      weekday: 6,
+    };
+    const found = nextOccurrences(schedule, NOW, 3);
+    expect(found.map((o) => o.setZone("UTC").toFormat("yyyy-MM-dd"))).toEqual([
+      "2026-08-08",
+      "2026-09-12",
+      "2026-10-10",
+    ]);
+    for (const occurrence of found) expect(occurrence.setZone("UTC").weekday).toBe(6);
+  });
+
+  test("the last Sunday of each month", () => {
+    const schedule: EventSchedule = {
+      kind: "monthlyWeekday",
+      time: "13:00",
+      timezone: "UTC",
+      nthWeek: -1,
+      weekday: 7,
+    };
+    const found = nextOccurrences(schedule, NOW, 3);
+    expect(found.map((o) => o.setZone("UTC").toFormat("yyyy-MM-dd"))).toEqual([
+      "2026-08-30",
+      "2026-09-27",
+      "2026-10-25",
+    ]);
+    // "Last" means no further same weekday remains in that month.
+    for (const occurrence of found) {
+      const day = occurrence.setZone("UTC");
+      expect(day.weekday).toBe(7);
+      expect(day.day + 7).toBeGreaterThan(day.daysInMonth ?? 31);
+    }
+  });
+
+  test("a 5th weekday only fires in months that have one", () => {
+    const schedule: EventSchedule = {
+      kind: "monthlyWeekday",
+      time: "13:00",
+      timezone: "UTC",
+      nthWeek: 5,
+      weekday: 1, // Monday
+    };
+    const found = nextOccurrences(schedule, NOW, 3).map((o) =>
+      o.setZone("UTC").toFormat("yyyy-MM-dd"),
+    );
+    expect(found).toEqual(["2026-08-31", "2026-11-30", "2027-03-29"]);
+  });
+});
+
+describe("fortnightly (Swordland Showdown)", () => {
+  test("every 2 weeks always lands on the anchor's weekday", () => {
+    // 2026-08-09 is a Sunday.
+    const schedule: EventSchedule = {
+      kind: "interval",
+      time: "13:00",
+      timezone: "UTC",
+      intervalDays: 14,
+      anchorDate: "2026-08-09",
+    };
+    const found = nextOccurrences(schedule, NOW, 4);
+    expect(found.map((o) => o.setZone("UTC").toFormat("yyyy-MM-dd"))).toEqual([
+      "2026-08-09",
+      "2026-08-23",
+      "2026-09-06",
+      "2026-09-20",
+    ]);
+    for (const occurrence of found) expect(occurrence.setZone("UTC").weekday).toBe(7);
+  });
+
+  test("it skips the intervening week", () => {
+    const schedule: EventSchedule = {
+      kind: "interval",
+      time: "13:00",
+      timezone: "UTC",
+      intervalDays: 14,
+      anchorDate: "2026-08-09",
+    };
+    const dates = nextOccurrences(schedule, NOW, 4).map((o) =>
+      o.setZone("UTC").toFormat("yyyy-MM-dd"),
+    );
+    expect(dates).not.toContain("2026-08-16");
+  });
+});
+
 describe("UTC server time (the default)", () => {
   const schedule: EventSchedule = { kind: "weekly", time: "20:00", timezone: "UTC", weekdays: [1] };
 
@@ -158,5 +285,43 @@ describe("describeSchedule", () => {
         anchorDate: "2026-08-06",
       }),
     ).toBe("Every 2 days at 21:00 (Asia/Seoul) (from 2026-08-06)");
+  });
+
+  test("whole weeks read as weeks on a named day", () => {
+    expect(
+      describeSchedule({
+        kind: "interval",
+        time: "13:00",
+        timezone: "UTC",
+        intervalDays: 14,
+        anchorDate: "2026-08-09", // a Sunday
+      }),
+    ).toBe("Every 2 weeks on Sun at 13:00 (UTC) (from 2026-08-09)");
+  });
+
+  test("monthly kinds", () => {
+    expect(
+      describeSchedule({ kind: "monthlyDay", time: "13:00", timezone: "UTC", dayOfMonth: 15 }),
+    ).toBe("Day 15 of every month at 13:00 (UTC)");
+
+    expect(
+      describeSchedule({
+        kind: "monthlyWeekday",
+        time: "13:00",
+        timezone: "UTC",
+        nthWeek: 2,
+        weekday: 6,
+      }),
+    ).toBe("The 2nd Sat of every month at 13:00 (UTC)");
+
+    expect(
+      describeSchedule({
+        kind: "monthlyWeekday",
+        time: "13:00",
+        timezone: "UTC",
+        nthWeek: -1,
+        weekday: 7,
+      }),
+    ).toBe("The last Sun of every month at 13:00 (UTC)");
   });
 });

@@ -39,9 +39,57 @@ describe("parseDays", () => {
     expect(parseDays("every1")).toEqual({ kind: "daily" });
   });
 
+  test("week intervals", () => {
+    expect(parseDays("every2w")).toEqual({ kind: "interval", intervalDays: 14 });
+    expect(parseDays("2w")).toEqual({ kind: "interval", intervalDays: 14 });
+    expect(parseDays("every 3 weeks")).toEqual({ kind: "interval", intervalDays: 21 });
+    // Aligned to a weekday, so the fortnight always lands on it.
+    expect(parseDays("every2w:sun")).toEqual({
+      kind: "interval",
+      intervalDays: 14,
+      alignWeekday: 7,
+    });
+    expect(parseDays("2w-mon")).toEqual({ kind: "interval", intervalDays: 14, alignWeekday: 1 });
+  });
+
+  test("weeks are not mistaken for days", () => {
+    expect(parseDays("2w")).not.toEqual({ kind: "interval", intervalDays: 2 });
+    expect(parseDays("2d")).toEqual({ kind: "interval", intervalDays: 2 });
+  });
+
+  test("monthly by day of the month", () => {
+    expect(parseDays("monthly")).toEqual({ kind: "monthlyDay" });
+    expect(parseDays("매월")).toEqual({ kind: "monthlyDay" });
+    expect(parseDays("monthly:15")).toEqual({ kind: "monthlyDay", dayOfMonth: 15 });
+    expect(parseDays("monthly:1st")).toEqual({ kind: "monthlyDay", dayOfMonth: 1 });
+    expect(parseDays("매월:15일")).toEqual({ kind: "monthlyDay", dayOfMonth: 15 });
+  });
+
+  test("monthly by nth weekday", () => {
+    expect(parseDays("monthly:2nd-sat")).toEqual({
+      kind: "monthlyWeekday",
+      nthWeek: 2,
+      weekday: 6,
+    });
+    expect(parseDays("monthly:last-sun")).toEqual({
+      kind: "monthlyWeekday",
+      nthWeek: -1,
+      weekday: 7,
+    });
+    expect(parseDays("monthly:first mon")).toEqual({
+      kind: "monthlyWeekday",
+      nthWeek: 1,
+      weekday: 1,
+    });
+  });
+
   test("rejects unknown tokens", () => {
     expect(parseDays("someday")).toHaveProperty("error");
     expect(parseDays("")).toHaveProperty("error");
+    expect(parseDays("monthly:32")).toHaveProperty("error");
+    expect(parseDays("monthly:9th-sat")).toHaveProperty("error");
+    expect(parseDays("monthly:2nd-funday")).toHaveProperty("error");
+    expect(parseDays("every9w")).toHaveProperty("error");
   });
 });
 

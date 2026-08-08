@@ -12,18 +12,34 @@ const WEEKDAY_ALIASES: Record<string, number> = {
   sun: 7, sunday: 7, "일": 7, "일요일": 7,
 };
 
-export interface ParsedDays {
-  kind: "weekly" | "daily" | "interval";
-  weekdays?: number[];
-  intervalDays?: number;
-}
+const NTH_ALIASES: Record<string, number> = {
+  "1st": 1, first: 1, "1": 1, "첫째": 1, "첫": 1,
+  "2nd": 2, second: 2, "2": 2, "둘째": 2,
+  "3rd": 3, third: 3, "3": 3, "셋째": 3,
+  "4th": 4, fourth: 4, "4": 4, "넷째": 4,
+  "5th": 5, fifth: 5, "5": 5, "다섯째": 5,
+  last: -1, "마지막": -1,
+};
+
+export type ParsedDays =
+  | { kind: "daily" }
+  | { kind: "weekly"; weekdays: number[] }
+  /** `alignWeekday` snaps the anchor forward to that weekday, for fortnights. */
+  | { kind: "interval"; intervalDays: number; alignWeekday?: number }
+  | { kind: "monthlyDay"; dayOfMonth?: number }
+  | { kind: "monthlyWeekday"; nthWeek: number; weekday: number };
 
 /**
  * Accepts:
- *   "mon,thu"      -> weekly on Monday and Thursday
- *   "sat sun"      -> weekly on Saturday and Sunday
- *   "daily"        -> every day
- *   "every2" / "2d" / "every 2 days" -> every second day
+ *   "mon,thu"          -> weekly on Monday and Thursday
+ *   "daily"            -> every day
+ *   "every2" / "2d"    -> every second day
+ *   "every2w" / "2w"   -> every second week, aligned to the anchor's weekday
+ *   "every2w:sun"      -> every second Sunday
+ *   "monthly"          -> monthly, on the anchor's day of the month
+ *   "monthly:15"       -> the 15th of every month
+ *   "monthly:2nd-sat"  -> the second Saturday of every month
+ *   "monthly:last-sun" -> the last Sunday of every month
  */
 export function parseDays(input: string): ParsedDays | { error: string } {
   const raw = input.trim().toLowerCase();
@@ -31,6 +47,53 @@ export function parseDays(input: string): ParsedDays | { error: string } {
 
   if (["daily", "everyday", "every day", "매일"].includes(raw)) {
     return { kind: "daily" };
+  }
+
+  // Weeks before days, so "2w" is not read as a bare number.
+  const weeks = raw.match(/^(?:every\s*)?(\d+)\s*w(?:eeks?)?(?:\s*[:\-]\s*([a-z가-힣]+))?$/);
+  if (weeks) {
+    const count = Number(weeks[1]);
+    if (!Number.isInteger(count) || count < 1 || count > 8) {
+      return { error: "Week interval must be between 1 and 8 weeks." };
+    }
+    const alignToken = weeks[2];
+    if (alignToken !== undefined) {
+      const weekday = WEEKDAY_ALIASES[alignToken];
+      if (!weekday) return { error: `Could not read the weekday \`${alignToken}\`.` };
+      return { kind: "interval", intervalDays: count * 7, alignWeekday: weekday };
+    }
+    return { kind: "interval", intervalDays: count * 7 };
+  }
+
+  if (raw === "monthly" || raw === "매월" || raw === "매달") {
+    return { kind: "monthlyDay" };
+  }
+
+  const monthly = raw.match(/^(?:monthly|매월|매달)\s*[:\-]\s*(.+)$/);
+  if (monthly) {
+    const spec = monthly[1]!.trim();
+
+    const dayOnly = spec.match(/^(\d{1,2})(?:st|nd|rd|th|일)?$/);
+    if (dayOnly) {
+      const day = Number(dayOnly[1]);
+      if (day < 1 || day > 31) return { error: "Day of the month must be 1–31." };
+      return { kind: "monthlyDay", dayOfMonth: day };
+    }
+
+    const nthWeekday = spec.match(/^([a-z0-9가-힣]+)\s*[-\s]\s*([a-z가-힣]+)$/);
+    if (nthWeekday) {
+      const nth = NTH_ALIASES[nthWeekday[1]!];
+      const weekday = WEEKDAY_ALIASES[nthWeekday[2]!];
+      if (nth === undefined) {
+        return { error: `Could not read \`${nthWeekday[1]}\`. Use \`1st\`–\`5th\` or \`last\`.` };
+      }
+      if (!weekday) return { error: `Could not read the weekday \`${nthWeekday[2]}\`.` };
+      return { kind: "monthlyWeekday", nthWeek: nth, weekday };
+    }
+
+    return {
+      error: `Could not read \`${spec}\`. Use \`monthly:15\`, \`monthly:2nd-sat\` or \`monthly:last-sun\`.`,
+    };
   }
 
   const interval = raw.match(/^every\s*(\d+)\s*(?:d|days?)?$|^(\d+)\s*d(?:ays?)?$/);
@@ -48,7 +111,9 @@ export function parseDays(input: string): ParsedDays | { error: string } {
     const weekday = WEEKDAY_ALIASES[token];
     if (!weekday) {
       return {
-        error: `Could not read \`${token}\`. Use weekdays (\`mon,thu\`), \`daily\`, or \`every2\`.`,
+        error:
+          `Could not read \`${token}\`. Use weekdays (\`mon,thu\`), \`daily\`, \`every2\`, ` +
+          "`every2w`, or `monthly:2nd-sat`.",
       };
     }
     if (!weekdays.includes(weekday)) weekdays.push(weekday);

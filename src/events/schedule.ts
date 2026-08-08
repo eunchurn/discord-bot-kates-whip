@@ -33,6 +33,19 @@ function matchesDay(schedule: EventSchedule, day: DateTime): boolean {
       const date = DateTime.fromISO(schedule.anchorDate ?? "", { zone: schedule.timezone });
       return date.isValid && date.hasSame(day, "day");
     }
+    case "monthlyDay": {
+      // February has no 31st, so short months fall back to their last day
+      // rather than skipping the event entirely.
+      const wanted = schedule.dayOfMonth ?? 1;
+      return day.day === Math.min(wanted, day.daysInMonth ?? 31);
+    }
+    case "monthlyWeekday": {
+      if (day.weekday !== schedule.weekday) return false;
+      const nth = schedule.nthWeek ?? 1;
+      // The last matching weekday is the one with no same weekday after it.
+      if (nth === -1) return day.day + 7 > (day.daysInMonth ?? 31);
+      return Math.ceil(day.day / 7) === nth;
+    }
   }
 }
 
@@ -71,6 +84,15 @@ export function nextOccurrence(
   return nextOccurrences(schedule, from, 1)[0];
 }
 
+const ORDINALS: Record<number, string> = {
+  1: "1st",
+  2: "2nd",
+  3: "3rd",
+  4: "4th",
+  5: "5th",
+  [-1]: "last",
+};
+
 /** Human-readable recurrence, e.g. "Mon, Thu at 20:00 (Asia/Seoul)". */
 export function describeSchedule(schedule: EventSchedule): string {
   const suffix = `at ${schedule.time} (${schedule.timezone})`;
@@ -83,9 +105,26 @@ export function describeSchedule(schedule: EventSchedule): string {
         .join(", ");
       return `${days || "—"} ${suffix}`;
     }
-    case "interval":
-      return `Every ${schedule.intervalDays ?? 2} days ${suffix} (from ${schedule.anchorDate})`;
+    case "interval": {
+      const days = schedule.intervalDays ?? 2;
+      // A whole number of weeks reads better as weeks on a named day.
+      if (days % 7 === 0) {
+        const weeks = days / 7;
+        const anchor = DateTime.fromISO(schedule.anchorDate ?? "", { zone: schedule.timezone });
+        const weekday = anchor.isValid ? (WEEKDAY_LABELS[anchor.weekday - 1] ?? "") : "";
+        const every = weeks === 1 ? "Every week" : `Every ${weeks} weeks`;
+        return `${every}${weekday ? ` on ${weekday}` : ""} ${suffix} (from ${schedule.anchorDate})`;
+      }
+      return `Every ${days} days ${suffix} (from ${schedule.anchorDate})`;
+    }
     case "once":
       return `Once on ${schedule.anchorDate} ${suffix}`;
+    case "monthlyDay":
+      return `Day ${schedule.dayOfMonth ?? 1} of every month ${suffix}`;
+    case "monthlyWeekday": {
+      const nth = ORDINALS[schedule.nthWeek ?? 1] ?? "1st";
+      const weekday = WEEKDAY_LABELS[(schedule.weekday ?? 1) - 1] ?? "?";
+      return `The ${nth} ${weekday} of every month ${suffix}`;
+    }
   }
 }

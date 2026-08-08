@@ -32,9 +32,11 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         value: [
           "`time:` **UTC = Kingshot server time** by default, 24h (`20:00`)",
           "Everyone still sees the reminder in their own local time.",
-          "`days:` `mon,thu` · `daily` · `every2` (every 2 days)",
+          "`days:` `mon,thu` · `daily` · `every2` (2일마다)",
+          "  `every2w:sun` (격주 일요일) · `monthly:2nd-sat` (매월 둘째 토)",
+          "  `monthly:15` (매월 15일) · `monthly:last-sun` (매월 마지막 일)",
           "`remind:` `10,5` — minutes before start (default `10,5`)",
-          "`anchor:` for `every2`, a date the cycle lands on (`YYYY-MM-DD`)",
+          "`anchor:` for `every2`/`every2w`, a date the cycle lands on",
           "`timezone:` only if you want something other than UTC",
         ].join("\n"),
       },
