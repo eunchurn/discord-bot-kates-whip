@@ -111,9 +111,12 @@ commands are open to everyone.
 | `DEFAULT_ADMIN_ROLE_ID` | —                           | Role seeded as the event-managing role on join |
 | `DEFAULT_LEAD_MINUTES`  | `10,5`                      | Default reminder lead times                    |
 
-`DEFAULT_ADMIN_ROLE_ID` is set to `1470006260173897738` (**ZXC staff**) in the
-compose file and the Kubernetes manifest, so the bot is manageable the moment it
-joins. `/setup admin_role:` overrides it per server.
+`DEFAULT_ADMIN_ROLE_ID` is set to the staff role in the compose file and the
+Kubernetes manifest, so the bot is manageable the moment it joins a server.
+
+It is only applied when a server is first seen. Servers already in the database
+keep whatever `/setup admin_role:` last stored, so changing the variable does
+not migrate them — re-run `/setup` there instead.
 
 ## Data model
 

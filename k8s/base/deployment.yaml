@@ -57,9 +57,11 @@ spec:
               value: "30"
             - name: DEFAULT_TIMEZONE
               value: "UTC"
-            # "ZXC staff" — seeded as the event-managing role for new servers.
+            # Staff role, seeded as the event-managing role when the bot joins
+            # a server it has not seen before. Existing servers keep whatever
+            # /setup last stored, so changing this does not migrate them.
             - name: DEFAULT_ADMIN_ROLE_ID
-              value: "1470006260173897738"
+              value: "1533245050287427755"
             - name: DEFAULT_LEAD_MINUTES
               value: "10,5"
           resources:
